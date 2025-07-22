@@ -202,10 +202,10 @@ class TaskRunner:
 
         # Load the reward manager for training and validation.
         reward_fn = load_reward_manager(
-            config, tokenizer, num_examine=0, **config.reward_model.get("reward_kwargs", {})
+            config, tokenizer, num_examine=0, module="train", **config.reward_model.get("reward_kwargs", {})
         )
         val_reward_fn = load_reward_manager(
-            config, tokenizer, num_examine=1, **config.reward_model.get("reward_kwargs", {})
+            config, tokenizer, num_examine=1,module="test", **config.reward_model.get("reward_kwargs", {})
         )
         resource_pool_manager = ResourcePoolManager(resource_pool_spec=resource_pool_spec, mapping=mapping)
 
@@ -271,7 +271,7 @@ def create_rl_dataset(data_paths, data_config, tokenizer, processor):
         # Use the default RLHFDataset class if no custom class is specified
         dataset_cls = RLHFDataset
     print(f"Using dataset class: {dataset_cls.__name__}")
-
+    
     # Instantiate the dataset using the determined dataset class
     dataset = dataset_cls(
         data_files=data_paths,

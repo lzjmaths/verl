@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import concurrent.futures
 from collections import defaultdict
 
 import torch
@@ -22,8 +21,8 @@ from verl.utils.reward_score import default_compute_score
 from verl.workers.reward_manager import register
 
 
-@register("naive")
-class NaiveRewardManager:
+@register("proofrl")
+class ProofrlRewardManager:
     """The reward manager."""
 
     def __init__(self, tokenizer, num_examine, compute_score=None, reward_fn_key="data_source") -> None:
@@ -57,7 +56,7 @@ class NaiveRewardManager:
 
         already_print_data_sources = {}
 
-        with concurrent.futures.ProcessPoolExecutor(max_workers=10) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=None) as executor:
             # 提交所有任务，并创建一个future到索引的映射
             # 我们传递索引 i 和 data_item
             futures = {
@@ -229,6 +228,4 @@ class NaiveRewardManager:
                     prompt_str, response_str, ground_truth)
         except Exception as e:
             # 在子进程中捕获错误并返回，以便主进程可以处理它
-            print(f"prompt:{prompt_str}\n response:{response_str}\n")
-            print(f"Exception in _process_single_item: {e}")
             return (i, e, None, None, None, None, None)

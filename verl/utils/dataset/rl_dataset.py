@@ -133,7 +133,51 @@ class RLHFDataset(Dataset):
             dataframes.append(dataframe)
         self.dataframe: datasets.Dataset = datasets.concatenate_datasets(dataframes)
 
-        print(f"dataset len: {len(self.dataframe)}")
+        print(f"First have dataset len: {len(self.dataframe)}")
+        if len(self.dataframe) > 0:
+            print("DEBUG: Calculating token length distribution for ALL samples...")
+            
+            tokenizer = self.tokenizer
+            prompt_key = self.prompt_key
+            
+            def calculate_length(doc):
+                # 使用 try-except 来捕捉可能由数据格式错误引发的异常
+                try:
+                    # 确保 prompt 字段存在且不为空
+                    if prompt_key not in doc or not doc[prompt_key]:
+                        return -1 # 返回一个特殊值表示错误
+                    return len(tokenizer.apply_chat_template(doc[prompt_key], add_generation_prompt=True))
+                except Exception as e:
+                    print(f"ERROR processing doc: {doc}, error: {e}")
+                    return -2 # 返回另一个特殊值
+
+            # 使用 .map() 高效计算所有样本的长度
+            temp_dataframe_with_lengths = self.dataframe.map(
+                lambda doc: {"debug_token_length": calculate_length(doc)},
+                num_proc=self.num_workers
+            )
+            
+            all_lengths = temp_dataframe_with_lengths["debug_token_length"]
+            
+            if all_lengths:
+                # 过滤掉表示错误的-1和-2
+                valid_lengths = [l for l in all_lengths if l >= 0]
+                error_count = len(all_lengths) - len(valid_lengths)
+
+                if valid_lengths:
+                    print("--- DEBUG: Token Length Statistics (for valid samples) ---")
+                    print(f"    Total valid samples processed: {len(valid_lengths)}")
+                    print(f"    Samples with processing errors: {error_count}")
+                    print(f"    Min length: {min(valid_lengths)}")
+                    print(f"    Max length: {max(valid_lengths)}")
+                    print(f"    Avg length: {sum(valid_lengths) / len(valid_lengths):.2f}")
+                    
+                    threshold = self.max_prompt_length
+                    over_threshold_count = sum(1 for length in valid_lengths if length > threshold)
+                    print(f"    Samples OVER threshold ({threshold}): {over_threshold_count} ({over_threshold_count / len(valid_lengths) * 100:.2f}%)")
+                    print("---------------------------------------------------------")
+                else:
+                    print("--- DEBUG: All samples resulted in a processing error! ---")
 
         # filter out too long prompts
         if self.filter_overlong_prompts:
@@ -144,6 +188,7 @@ class RLHFDataset(Dataset):
             video_key = self.video_key
 
             if processor is not None:
+                print("process is not none")
                 from verl.utils.dataset.vision_utils import process_image, process_video
 
                 def doc2len(doc) -> int:
@@ -161,7 +206,7 @@ class RLHFDataset(Dataset):
                     return len(processor(text=[raw_prompt], images=images, videos=videos)["input_ids"][0])
 
             else:
-
+                print("process is NONE")
                 def doc2len(doc) -> int:
                     return len(tokenizer.apply_chat_template(doc[prompt_key], add_generation_prompt=True))
 

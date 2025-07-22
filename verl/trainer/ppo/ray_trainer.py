@@ -368,6 +368,7 @@ class RayPPOTrainer:
             raise NotImplementedError
 
         self._validate_config()
+        print("begin to create dataloader")
         self._create_dataloader(train_dataset, val_dataset, collate_fn, train_sampler)
 
     def _validate_config(self):
@@ -540,8 +541,9 @@ class RayPPOTrainer:
         """
         # TODO: we have to make sure the batch size is divisible by the dp size
         from verl.trainer.main_ppo import create_rl_dataset, create_rl_sampler
-
+        print(f"44444444447777777777our dataset is {train_dataset}")
         if train_dataset is None:
+            print("1111111111111111111111")
             train_dataset = create_rl_dataset(
                 self.config.data.train_files, self.config.data, self.tokenizer, self.processor
             )

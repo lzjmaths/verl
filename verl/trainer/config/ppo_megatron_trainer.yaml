@@ -373,7 +373,7 @@ reward_model:
     override_transformer_config: {}
     use_mbridge: ${actor_rollout_ref.actor.megatron.use_mbridge}
   model:
-    input_tokenizer: ${actor_rollout_ref.model.path}  # set this to null if the chat template is identical
+    input_tokenizer:ctor_rollout_ref.model.path}  # set this to null if the chat template is identical ${a
     path: ~/models/FsfairX-LLaMA3-RM-v0.1
     trust_remote_code: False
     external_lib: ${actor_rollout_ref.model.external_lib}

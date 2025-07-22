@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+#!/usr/bin/env -S uv run --python
+
 try:
     from math_verify.errors import TimeoutException
     from math_verify.metric import math_metric
@@ -19,8 +22,10 @@ try:
 except ImportError:
     print("To use Math-Verify, please install it first by running `pip install math-verify`.")
 
-
-def compute_score(model_output: str, ground_truth: str, timeout_score: float = 0) -> bool:
+from math_verify.errors import TimeoutException
+from math_verify.metric import math_metric
+from math_verify.parser import ExprExtractionConfig, LatexExtractionConfig
+def compute_score(model_output: str, ground_truth: str, timeout_score: float = 0, *args, **kwargs) -> bool:
     verify_func = math_metric(
         gold_extraction_target=(LatexExtractionConfig(),),
         pred_extraction_target=(ExprExtractionConfig(), LatexExtractionConfig()),
@@ -37,3 +42,5 @@ def compute_score(model_output: str, ground_truth: str, timeout_score: float = 0
         ret_score = timeout_score
 
     return ret_score
+
+print(compute_score("1+1=2","1+1=2"))

@@ -2,8 +2,8 @@ set -x
 
 python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
-    data.train_files=$HOME/data/gsm8k/train.parquet \
-    data.val_files=$HOME/data/gsm8k/test.parquet \
+    data.train_files=/data3/private/linzejin/TTRL/verl/data/AIME-TTT/train.parquet \
+    data.val_files=/data3/private/linzejin/TTRL/verl/data/AIME-TTT/test.parquet \
     data.train_batch_size=1024 \
     data.max_prompt_length=512 \
     data.max_response_length=1024 \
