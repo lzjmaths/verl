@@ -45,14 +45,11 @@ def verify(data_source, solution_str: str, ground_truth: str,extra_info=None, ti
 
 # print(compute_score("123","our answer is \\boxed{ 30 } cffwef", "30^\\circ"))
 
-with open('/data2/private/linzejin/nev/.apiconfig.json', 'r', encoding='utf-8') as file:
+with open('/data3/private/linzejin/nev/.apiconfig.json', 'r', encoding='utf-8') as file:
     apiconfig = json.load(file)
 
 
-client = openai.OpenAI(
-    api_key = apiconfig['OPENAI_API_KEY'],
-    base_url = apiconfig['OPENAI_BASE_URL']
-)
+
 
 
 def find_box(pred_str: str):
@@ -145,6 +142,7 @@ class AgentBase:
     tokenizer = None
     llm = None
     TP = 1
+    cilent = None
 
     remote_models = [
         "deepseek-r1",
@@ -184,6 +182,10 @@ class AgentBase:
             }
         elif model in AgentBase.remote_models:
             self.remote = True
+        self.client = openai.OpenAI(
+            api_key = apiconfig['OPENAI_API_KEY'],
+            base_url = apiconfig['OPENAI_BASE_URL']
+        )
         if not self.remote:
             raise ValueError(f"model{model} is not in the remote_models list!")
 
@@ -209,7 +211,7 @@ class AgentBase:
                 }
                 if AgentBase.debug:
                     client_params['seed'] = AgentBase.seed
-                stream = client.chat.completions.create(**client_params)
+                stream = self.client.chat.completions.create(**client_params)
                 response_content = ""
                 for chunk in stream:
                     if len(chunk.choices) == 0:
@@ -354,7 +356,7 @@ def compute_score(data_source:str, solution_str:str, ground_truth, extra_info=No
     # print(f"prompt:{prompt_str}")
     reviewer = "Qwen3-14B"
     # reviewer = "/data2/private/linzejin/models/Qwen/Qwen3-14B"  # 默认值
-    reviewer = "deepseek-r1"
+    # reviewer = "deepseek-r1"
     reviews = 1
     workers = 4
     # try:

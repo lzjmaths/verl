@@ -1190,8 +1190,8 @@ class RayPPOTrainer:
                             future_reward = compute_reward_async.remote(batch, self.config, self.tokenizer)
                         else:
                             reward_tensor, reward_extra_infos_dict = compute_reward(batch, self.reward_fn)
-                            if reward_extra_info_dict:
-                                reward_extra_info_metric=self._process_reward_extra_info_dict(reward_extra_info_dict)
+                            if reward_extra_infos_dict:
+                                reward_extra_info_metric=self._process_reward_extra_info_dict(reward_extra_infos_dict)
                                 metric.update(reward_extra_info_metric)
 
                     # recompute old_log_probs

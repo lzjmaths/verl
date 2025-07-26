@@ -66,7 +66,7 @@ class NaiveRewardManager:
                 return data.batch["rm_scores"]
 
         reward_tensor = torch.zeros_like(data.batch["responses"], dtype=torch.float32)
-        reward_extra_info = defaultdict(list)
+        reward_extra_info = defaultdict(int)
 
         already_print_data_sources = {}
 
@@ -92,17 +92,22 @@ class NaiveRewardManager:
                         
                     # --- 在主进程中安全地聚合结果 ---
                     if isinstance(score, dict):
-                        reward = score["score"]
+                        reward = score.pop("score")
+                        reward_extra_info = {}
                         reward_extra_info["TP"]=0
                         reward_extra_info["TN"]=0
                         reward_extra_info["FN"]=0
                         reward_extra_info["FP"]=0
+                        reward_extra_info["true_score"]=0
 
                         # 存储所有额外信息
                         for key, value in score.items():
                             # 注意：由于结果是无序返回的，直接append会打乱顺序
                             # 如果需要保持顺序，需要更复杂的处理，但对于统计通常没问题
-                            reward_extra_info[key]+=value
+                            if key in reward_extra_info:
+                                reward_extra_info[key] += value
+                            else:
+                                reward_extra_info[key] = value
                     else:
                         reward = score
 
@@ -137,68 +142,68 @@ class NaiveRewardManager:
         else:
             return reward_tensor
 
-        for i in range(len(data)):
-            data_item = data[i]  # DataProtoItem
+        # for i in range(len(data)):
+        #     data_item = data[i]  # DataProtoItem
 
-            prompt_ids = data_item.batch["prompts"]
+        #     prompt_ids = data_item.batch["prompts"]
 
-            prompt_length = prompt_ids.shape[-1]
+        #     prompt_length = prompt_ids.shape[-1]
 
-            valid_prompt_length = data_item.batch["attention_mask"][:prompt_length].sum()
-            valid_prompt_ids = prompt_ids[-valid_prompt_length:]
+        #     valid_prompt_length = data_item.batch["attention_mask"][:prompt_length].sum()
+        #     valid_prompt_ids = prompt_ids[-valid_prompt_length:]
 
-            response_ids = data_item.batch["responses"]
-            valid_response_length = data_item.batch["attention_mask"][prompt_length:].sum()
-            valid_response_ids = response_ids[:valid_response_length]
+        #     response_ids = data_item.batch["responses"]
+        #     valid_response_length = data_item.batch["attention_mask"][prompt_length:].sum()
+        #     valid_response_ids = response_ids[:valid_response_length]
 
-            # decode
-            prompt_str = self.tokenizer.decode(valid_prompt_ids, skip_special_tokens=True)
-            response_str = self.tokenizer.decode(valid_response_ids, skip_special_tokens=True)
+        #     # decode
+        #     prompt_str = self.tokenizer.decode(valid_prompt_ids, skip_special_tokens=True)
+        #     response_str = self.tokenizer.decode(valid_response_ids, skip_special_tokens=True)
 
-            ground_truth = data_item.non_tensor_batch["reward_model"]["ground_truth"]
-            data_source = data_item.non_tensor_batch[self.reward_fn_key]
-            extra_info = data_item.non_tensor_batch.get("extra_info", {})
-            num_turns = data_item.non_tensor_batch.get("__num_turns__", None)
-            extra_info["num_turns"] = num_turns
+        #     ground_truth = data_item.non_tensor_batch["reward_model"]["ground_truth"]
+        #     data_source = data_item.non_tensor_batch[self.reward_fn_key]
+        #     extra_info = data_item.non_tensor_batch.get("extra_info", {})
+        #     num_turns = data_item.non_tensor_batch.get("__num_turns__", None)
+        #     extra_info["num_turns"] = num_turns
 
-            score = self.compute_score(
-                data_source=data_source,
-                solution_str=response_str,
-                ground_truth=ground_truth,
-                extra_info=extra_info,
-            )
+        #     score = self.compute_score(
+        #         data_source=data_source,
+        #         solution_str=response_str,
+        #         ground_truth=ground_truth,
+        #         extra_info=extra_info,
+        #     )
 
-            if isinstance(score, dict):
-                reward = score["score"]
-                # Store the information including original reward
-                for key, value in score.items():
-                    reward_extra_info[key].append(value)
-            else:
-                reward = score
+        #     if isinstance(score, dict):
+        #         reward = score["score"]
+        #         # Store the information including original reward
+        #         for key, value in score.items():
+        #             reward_extra_info[key].append(value)
+        #     else:
+        #         reward = score
 
-            reward_tensor[i, valid_response_length - 1] = reward
+        #     reward_tensor[i, valid_response_length - 1] = reward
 
-            if data_source not in already_print_data_sources:
-                already_print_data_sources[data_source] = 0
+        #     if data_source not in already_print_data_sources:
+        #         already_print_data_sources[data_source] = 0
 
-            if already_print_data_sources[data_source] < self.num_examine:
-                already_print_data_sources[data_source] += 1
-                print("[prompt]", prompt_str)
-                print("[response]", response_str)
-                print("[ground_truth]", ground_truth)
-                if isinstance(score, dict):
-                    for key, value in score.items():
-                        print(f"[{key}]", value)
-                else:
-                    print("[score]", score)
+        #     if already_print_data_sources[data_source] < self.num_examine:
+        #         already_print_data_sources[data_source] += 1
+        #         print("[prompt]", prompt_str)
+        #         print("[response]", response_str)
+        #         print("[ground_truth]", ground_truth)
+        #         if isinstance(score, dict):
+        #             for key, value in score.items():
+        #                 print(f"[{key}]", value)
+        #         else:
+        #             print("[score]", score)
 
-        if return_dict:
-            return {
-                "reward_tensor": reward_tensor,
-                "reward_extra_info": reward_extra_info,
-            }
-        else:
-            return reward_tensor
+        # if return_dict:
+        #     return {
+        #         "reward_tensor": reward_tensor,
+        #         "reward_extra_info": reward_extra_info,
+        #     }
+        # else:
+        #     return reward_tensor
 
     def _process_single_item(self, i, data_item):
         """
