@@ -67,9 +67,11 @@ class get_custom_reward_fn:
         if not hasattr(custom_module, function_name):
             raise AttributeError(f"Function '{function_name}' not found in '{file_path}'.")
 
-        print(f"Using customized function '{function_name}' from '{file_path}' (module: {module_name})")
+        # print(f"Using customized function '{function_name}' from '{file_path}' (module: {module_name})")
         
         self.raw_fn_or_class = getattr(custom_module, function_name)
+
+        # print(f"--- raw_fn_or_class type:{type(self.raw_fn_or_class)}, content:{self.raw_fn_or_class} ---")
         self.reward_kwargs = dict(reward_fn_config.get("reward_kwargs", {}))
 
         # --- 让你的代码更健壮，支持工厂模式 ---
@@ -83,6 +85,14 @@ class get_custom_reward_fn:
     def __call__(self, *args, **kwargs):
         return self.invokable(*args, **kwargs, **self.reward_kwargs)
 
+if __name__ == "__main__":
+    config = {"custom_reward_function":{"path":"/data2/private/linzejin/verl/RLVR/verify_reward.py", "name":"compute_score"}}
+    extra_info = {"prompt":"1+1=2"}
+    print(f"begining extra_info:{extra_info}")
+    reward_fn = get_custom_reward_fn(config,module_type="train")
+
+
+    print(reward_fn("data_source", "1+1=2", "1+1=2", extra_info = {"prompt":"1+1=2"}))
 # class get_custom_reward_fn:
 #     def __init__(self, config, module):
 #         import importlib.util

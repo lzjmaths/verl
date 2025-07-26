@@ -5,8 +5,8 @@ export VERL_USE_MODELSCOPE=True
 echo "start training"
 DATE=$(date +%m%d)
 TIME_TAG=$(date +%H%M%S)
-LOCAL_DIR=/data/private/linzejin/proofrl
-MODEL_DIR=/data/private/linzejin/models/Qwen
+LOCAL_DIR=/data2/private/linzejin/proofrl
+MODEL_DIR=/data2/private/linzejin/models/Qwen
 
 K=3
 MAX_PROMPT_LENGTH=1024
@@ -42,13 +42,13 @@ fi
 BACKBONE="Qwen2.5-Math-1.5B"
 ADVANTAGE="grpo"
 
-DATA_LOCAL_DIR="/data3/private/linzejin/verl/data"
-BACKBONE_PATH="/data3/private/linzejin/models/Qwen/${BACKBONE}"
+DATA_LOCAL_DIR="/data2/private/linzejin/proofrl/data"
+BACKBONE_PATH="/data2/private/linzejin/models/Qwen/${BACKBONE}"
 
 MODEL="${TASK}-${BACKBONE}"
 
-PROJECT_NAME="grpo_RLVR-${TASK}"
-EXPERIMENT_NAME="rlvr@${K}k"
+PROJECT_NAME="grpo_PROOFRL-${TASK}"
+EXPERIMENT_NAME="prl@${K}k"
 LOG_NAME="${EXPERIMENT_NAME}-${MODEL}-${DATE}-${TIME_TAG}"
 OUTPUT_DIR="checkpoints/${PROJECT_NAME}/${MODEL}/${DATE}/${EXPERIMENT_NAME}-${ADVANTAGE}-${TIME_TAG}"
 
@@ -79,7 +79,7 @@ python -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.tensor_model_parallel_size=2 \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.temperature=1.0 \
-    actor_rollout_ref.rollout.gpu_memory_utilization=0.6 \
+    actor_rollout_ref.rollout.gpu_memory_utilization=0.8 \
     actor_rollout_ref.rollout.val_kwargs.n=$N \
     actor_rollout_ref.rollout.val_kwargs.top_p=0.95 \
     actor_rollout_ref.rollout.val_kwargs.temperature=0.6 \
@@ -93,12 +93,12 @@ python -m verl.trainer.main_ppo \
     trainer.experiment_name=$LOG_NAME \
     trainer.n_gpus_per_node=$GPU_NUM \
     trainer.nnodes=1 \
-    trainer.save_freq=150 \
+    trainer.save_freq=100 \
     trainer.default_local_dir=$OUTPUT_DIR \
     trainer.test_freq=10 \
     trainer.total_epochs=$EPISODE \
-    custom_reward_function.path="/data3/private/linzejin/verl/RLVR/verify_reward.py" \
-    custom_test_function.path="/data3/private/linzejin/verl/RLVR/math_reward.py"  $@ 
+    custom_reward_function.path="/data2/private/linzejin/verl/RLVR/verify_reward.py" \
+    custom_test_function.path="/data2/private/linzejin/verl/RLVR/math_reward.py"  $@ 
 
 
 echo "Output directory: $OUTPUT_DIR"

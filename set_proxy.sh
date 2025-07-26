@@ -3,9 +3,9 @@ export https_proxy="http://127.0.0.1:17890"
 export all_proxy="socks5://127.0.0.1:17890"
 export no_proxy="localhost,127.0.0.1,::1"
 
-export http_proxy="http://127.0.0.1:17790"
-export https_proxy="http://127.0.0.1:17790"
-export all_proxy="socks5://127.0.0.1:17790"
+export http_proxy="http://127.0.0.1:10090"
+export https_proxy="http://127.0.0.1:10090"
+export all_proxy="socks5://127.0.0.1:10090"
 export no_proxy="localhost,127.0.0.1,::1"
 
 unset http_proxy

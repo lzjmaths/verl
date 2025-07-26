@@ -1190,6 +1190,9 @@ class RayPPOTrainer:
                             future_reward = compute_reward_async.remote(batch, self.config, self.tokenizer)
                         else:
                             reward_tensor, reward_extra_infos_dict = compute_reward(batch, self.reward_fn)
+                            if reward_extra_info_dict:
+                                reward_extra_info_metric=self._process_reward_extra_info_dict(reward_extra_info_dict)
+                                metric.update(reward_extra_info_metric)
 
                     # recompute old_log_probs
                     with marked_timer("old_log_prob", timing_raw, color="blue"):
@@ -1378,3 +1381,6 @@ class RayPPOTrainer:
                     pprint(f"Final validation metrics: {last_val_metrics}")
                     progress_bar.close()
                     return
+
+    def _process_reward_extra_info_dict(self, extra_info):
+        return extra_info
