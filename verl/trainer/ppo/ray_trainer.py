@@ -1192,7 +1192,8 @@ class RayPPOTrainer:
                             reward_tensor, reward_extra_infos_dict = compute_reward(batch, self.reward_fn)
                             if reward_extra_infos_dict:
                                 reward_extra_info_metric=self._process_reward_extra_info_dict(reward_extra_infos_dict)
-                                metric.update(reward_extra_info_metric)
+                                metrics.update(reward_extra_info_metric)
+                                reward_extra_infos_dict = {}
 
                     # recompute old_log_probs
                     with marked_timer("old_log_prob", timing_raw, color="blue"):
@@ -1382,5 +1383,71 @@ class RayPPOTrainer:
                     progress_bar.close()
                     return
 
+    
     def _process_reward_extra_info_dict(self, extra_info):
-        return extra_info
+        """
+        处理额外信息字典，计算分类性能统计指标
+        
+        Args:
+            extra_info (dict): 包含 TP, TN, FP, FN 数量的字典
+        
+        Returns:
+            dict: 包含以下键的字典
+                - accuracy: 准确率 (TP + TN) / (TP + TN + FP + FN)
+                - precision: 精确率 TP / (TP + FP)
+                - recall: 召回率/敏感度 TP / (TP + FN)
+                - specificity: 特异度 TN / (TN + FP)
+                - total_num: 总样本数 TP + TN + FP + FN
+                - true_score: 真实分数比例
+        """
+        # 获取混淆矩阵的四个值
+        TP = extra_info.get('TP', 0)
+        TN = extra_info.get('TN', 0)
+        FP = extra_info.get('FP', 0)
+        FN = extra_info.get('FN', 0)
+        
+        # 计算总数
+        total_num = TP + TN + FP + FN
+        
+        # 初始化结果字典
+        result = {
+            'total_num': total_num,
+            "true_score": extra_info.get("true_score",0) / total_num
+        }
+        
+        # 防止除零错误，计算各项指标
+        if total_num == 0:
+            # 如果没有样本，所有指标设为0
+            result.update({
+                'accuracy': 0.0,
+                'precision': 0.0,
+                'recall': 0.0,
+                'specificity': 0.0
+            })
+        else:
+            # 计算准确率
+            result['accuracy'] = (TP + TN) / total_num
+            
+            # 计算精确率 (Precision)
+            if (TP + FP) == 0:
+                result['precision'] = 0.0  # 没有预测为正例的情况
+            else:
+                result['precision'] = TP / (TP + FP)
+            
+            # 计算召回率/敏感度 (Recall/Sensitivity)
+            if (TP + FN) == 0:
+                result['recall'] = 0.0  # 没有真实正例的情况
+            else:
+                result['recall'] = TP / (TP + FN)
+            
+            # 计算特异度 (Specificity)
+            if (TN + FP) == 0:
+                result['specificity'] = 0.0  # 没有真实负例的情况
+            else:
+                result['specificity'] = TN / (TN + FP)
+        result["TN"]=TN
+        result["TP"]=TP
+        result["FP"]=FP
+        result["FN"]=FN
+        return result
+

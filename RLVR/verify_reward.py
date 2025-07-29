@@ -45,7 +45,9 @@ def verify(data_source, solution_str: str, ground_truth: str,extra_info=None, ti
 
 # print(compute_score("123","our answer is \\boxed{ 30 } cffwef", "30^\\circ"))
 
-with open('/data3/private/linzejin/nev/.apiconfig.json', 'r', encoding='utf-8') as file:
+WORK_DIR = "/data2/private/linzejin"
+
+with open(os.path.join(WORK_DIR,'nev/.apiconfig.json'), 'r', encoding='utf-8') as file:
     apiconfig = json.load(file)
 
 
@@ -78,7 +80,7 @@ def find_box(pred_str: str):
     elif "false" in a:
         return "false"
     else:
-        return "true"
+        return "false"
 
 def extract_boxed(text):
     matches = re.findall(r'(true|false)', find_box(text), flags=re.IGNORECASE)
@@ -258,7 +260,7 @@ class Reviewer(AgentBase):
         self.seed += 1
         prompt = [
             {'role': 'user', 'content':
-             'You are a reviewer for this math problem. You are provided a candidate solution of this problem, and you need to analyze whether the answer is rigorous and correct. We will use your advice for further judgement of this proof.\n'
+             'You are a reviewer for this math problem. You are provided a candidate solution of this problem, and you need to analyze and point out one part of this solution that might be incomplete or contain some flaws. We will use your advice for further judgement of this solution.\n'
              '\n'
              '### Problem\n'
              '\n'
@@ -267,7 +269,7 @@ class Reviewer(AgentBase):
              '### Candidate Proof\n'
              '\n'
              f'{proof}\n'
-             'You need to explain your rationales and decide whether this candidate can be accepted as a valid solution of this problem. State your judgement inside $\\boxed{}$ as $\\boxed{true}$ or $\\boxed{false}$ at the end of your response.\n'
+             'A valid solution should have correct answer and rigorous process. You need to explain your rationales and decide whether this candidate can be accepted as a valid solution of this problem. State your judgement inside $\\boxed{}$ as $\\boxed{true}$ or $\\boxed{false}$ at the end of your response.\n'
              }]
         return prompt
 
@@ -397,17 +399,44 @@ def compute_score(data_source:str, solution_str:str, ground_truth, extra_info=No
     reward["FN"]=0
     if score == 1.0 and true_score == 1.0:
         reward["TP"]+=1
-    elif score == 1.0 and true_score ==0.0:
-        reward["FP"]+=1
-        print(f"There exists False Positive instance!")
-        print(f"prompt_str:{prompt_str}")
-        print(f"solution_str:{solution_str}")
-        print(f"ground_truth:{ground_truth}")
-        print(f"reviews:{result[0]['review']}")
+    elif score == 1.0 and true_score == 0.0:
+        reward["FP"] += 1
+        import json
+        import os
+        from datetime import datetime
+        
+        # 构建要保存的数据
+        fp_data = {
+            "timestamp": datetime.now().isoformat(),  # 添加时间戳
+            "prompt_str": prompt_str,
+            "solution_str": solution_str,
+            "ground_truth": ground_truth,
+            "reviews": result[0]['review']
+        }
+        
+        try:
+            # 确保目录存在
+            fp_dir = os.path.join(WORK_DIR, "verl/ProofRL/FP")
+            os.makedirs(fp_dir, exist_ok=True)
+            
+            # 文件路径
+            fp_file = os.path.join(fp_dir, "false_positive_instances.json")
+            # 保存到JSON文件
+            with open(fp_file, "a", encoding="utf-8") as f:
+                json.dump(fp_data, f, ensure_ascii=False, indent=2)
+                f.write(",\n")  # 添加换行符分隔不同实例
+            print(f"False Positive instance saved to JSON!")
+        except Exception as e:
+            print(f"Failed to save FP instance: {e}")
+            print(f"There exists False Positive instance!")
+            print(f"prompt_str:{prompt_str}")
+            print(f"solution_str:{solution_str}")
+            print(f"ground_truth:{ground_truth}")
+            print(f"reviews:{result[0]['review']}")
     elif score == 0.0 and true_score == 1.0:
         reward["FN"]+=1
     elif score == 0.0 and true_score == 0.0:
-        reward["FP"]+=1
+        reward["TN"]+=1
     return reward
 if __name__ == "__main__":
     print(compute_score("lighteval/MATH","\\boxed{1+1=2}", "1+1=2", {"prompt":"prove 1+1=2"}))
