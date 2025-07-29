@@ -66,7 +66,7 @@ class NaiveRewardManager:
                 return data.batch["rm_scores"]
 
         reward_tensor = torch.zeros_like(data.batch["responses"], dtype=torch.float32)
-        reward_extra_info = defaultdict(list)
+        reward_extra_info = defaultdict(int)
 
         already_print_data_sources = {}
 
@@ -98,9 +98,7 @@ class NaiveRewardManager:
                         for key, value in score.items():
                             # 注意：由于结果是无序返回的，直接append会打乱顺序
                             # 如果需要保持顺序，需要更复杂的处理，但对于统计通常没问题
-                            if key in ["TN","TP","FN","FP","true_score"]:
-                                if isinstance(reward_extra_info[key],list):
-                                    reward_extra_info[key] = 0
+                            if key in ["TP","TN","FP","FN","true_score"]:
                                 reward_extra_info[key] += value
                             else:
                                 reward_extra_info[key].append(value)
