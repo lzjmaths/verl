@@ -8,9 +8,10 @@ TIME_TAG=$(date +%H%M%S)
 LOCAL_DIR=/data2/private/linzejin/proofrl
 MODEL_DIR=/data2/private/linzejin/models/Qwen
 
-K=3
+K=2
 MAX_PROMPT_LENGTH=1024
-MAX_RESPONSE_LENGTH=$((1024 * $K))
+MAX_RESPONSE_LENGTH=8
+#$((1024 * $K))
 
 if [ "$K" -gt 8 ]; then
   N=1
@@ -19,8 +20,8 @@ else
 fi
 
 EPISODE=20
-DATA_TRAIN_BATCH_SIZE=32
-MINI_BATCH_SIZE=2
+DATA_TRAIN_BATCH_SIZE=4
+MINI_BATCH_SIZE=1
 MICRO_BATCH_SIZE=1
 GPU_NUM=2
 
@@ -95,7 +96,7 @@ python -m verl.trainer.main_ppo \
     trainer.nnodes=1 \
     trainer.save_freq=100 \
     trainer.default_local_dir=$OUTPUT_DIR \
-    trainer.test_freq=10 \
+    trainer.test_freq=5 \
     trainer.total_epochs=$EPISODE \
     custom_reward_function.path="/data2/private/linzejin/verl/RLVR/verify_reward.py" \
     custom_test_function.path="/data2/private/linzejin/verl/RLVR/math_reward.py"  $@ 
