@@ -19,10 +19,10 @@ else
 fi
 
 EPISODE=20
-DATA_TRAIN_BATCH_SIZE=16
+DATA_TRAIN_BATCH_SIZE=32
 MINI_BATCH_SIZE=2
 MICRO_BATCH_SIZE=1
-GPU_NUM=2
+GPU_NUM=4
 
 TASK="MATH500"
 
@@ -38,7 +38,7 @@ else
   # 例如，直接将 TASK 的值赋给 TEST_TASK
   echo "警告: TASK 不是 AMC 或 MATH500，使用默认值。"
   TEST_TASK="$TASK"
-fi 
+fi
 BACKBONE="Qwen2.5-Math-1.5B"
 ADVANTAGE="grpo"
 
@@ -47,8 +47,8 @@ BACKBONE_PATH="/mnt/workspace/linzejin/models/Qwen/${BACKBONE}"
 
 MODEL="${TASK}-${BACKBONE}"
 
-PROJECT_NAME="grpo_PROOFRL-${TASK}"
-EXPERIMENT_NAME="prl@${K}k"
+PROJECT_NAME="grpo_RLMR-${TASK}"
+EXPERIMENT_NAME="rlmr@${K}k"
 LOG_NAME="${EXPERIMENT_NAME}-${MODEL}-${DATE}-${TIME_TAG}"
 OUTPUT_DIR="checkpoints/${PROJECT_NAME}/${MODEL}/${DATE}/${EXPERIMENT_NAME}-${ADVANTAGE}-${TIME_TAG}"
 
@@ -79,7 +79,7 @@ python -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.tensor_model_parallel_size=2 \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.temperature=1.0 \
-    actor_rollout_ref.rollout.gpu_memory_utilization=0.5 \
+    actor_rollout_ref.rollout.gpu_memory_utilization=0.4 \
     actor_rollout_ref.rollout.val_kwargs.n=$N \
     actor_rollout_ref.rollout.val_kwargs.top_p=0.95 \
     actor_rollout_ref.rollout.val_kwargs.temperature=1.0 \
@@ -93,11 +93,12 @@ python -m verl.trainer.main_ppo \
     trainer.experiment_name=$LOG_NAME \
     trainer.n_gpus_per_node=$GPU_NUM \
     trainer.nnodes=1 \
+    trainer.rollout_data_dir=/mnt/workspace/linzejin/tmp \
     trainer.save_freq=100 \
     trainer.default_local_dir=$OUTPUT_DIR \
     trainer.test_freq=5 \
     trainer.total_epochs=$EPISODE \
-    custom_reward_function.path="/mnt/workspace/linzejin/verl/RLVR/verify_reward.py" \
+    custom_reward_function.path="/mnt/workspace/linzejin/verl/RLVR/math_reward_multi.py" \
     custom_test_function.path="/mnt/workspace/linzejin/verl/RLVR/math_reward.py"  $@ 
 
 
