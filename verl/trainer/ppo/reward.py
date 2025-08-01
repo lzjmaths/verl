@@ -180,11 +180,13 @@ def load_reward_manager(config, tokenizer, num_examine, module, **reward_kwargs)
         else:
             final_compute_score = default_compute_score
 
+    dim = config.reward_model.get("reward_dim", 2 if module == "train" else 1)  # Default reward dimension is 2
     # Instantiate and return the reward manager with the specified parameters
     return reward_manager_cls(
         tokenizer=tokenizer,
         num_examine=num_examine,
         compute_score=final_compute_score,
+        reward_dim=dim,
         reward_fn_key=config.data.reward_fn_key,
         **reward_kwargs,
     )

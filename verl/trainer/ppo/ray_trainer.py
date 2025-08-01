@@ -267,7 +267,7 @@ def compute_advantage(
         # handle all other adv estimator type other than GAE and GRPO
         adv_estimator_fn = core_algos.get_adv_estimator_fn(adv_estimator)
         adv_kwargs = {
-            "token_level_rewards": data.batch["token_level_rewards"],
+            "token_level_rewards": data.batch["token_level_rewards"], # reward_tensor
             "response_mask": data.batch["response_mask"],
             "config": config,
         }
@@ -741,6 +741,7 @@ class RayPPOTrainer:
             # evaluate using reward_function
             result = self.val_reward_fn(test_batch, return_dict=True)
             reward_tensor = result["reward_tensor"]
+            print(f"reward_tensor shape: {reward_tensor.shape}")
             scores = reward_tensor.sum(-1).cpu().tolist()
             sample_scores.extend(scores)
 
@@ -815,6 +816,7 @@ class RayPPOTrainer:
         # create actor and rollout
         if self.hybrid_engine:
             resource_pool = self.resource_pool_manager.get_resource_pool(Role.ActorRollout)
+            print(f"------------type of role_worker_mapping:{type(self.role_worker_mapping[Role.ActorRollout])}--------")
             actor_rollout_cls = RayClassWithInitArgs(
                 cls=self.role_worker_mapping[Role.ActorRollout],
                 config=self.config.actor_rollout_ref,
@@ -884,6 +886,7 @@ class RayPPOTrainer:
 
         if self.use_rm:
             self.rm_wg = all_wg["rm"]
+            print(f"type of rm:{type(self.rm_wg)}")
             self.rm_wg.init_model()
 
         # we should create rollout at the end so that vllm can have a better estimation of kv cache memory
@@ -1060,6 +1063,7 @@ class RayPPOTrainer:
         # currently, we only support validation using the reward_function.
         if self.val_reward_fn is not None and self.config.trainer.get("val_before_train", True):
             val_metrics = self._validate()
+            # validation part
             assert val_metrics, f"{val_metrics=}"
             pprint(f"Initial validation metrics: {val_metrics}")
             logger.log(data=val_metrics, step=self.global_steps)
@@ -1252,9 +1256,11 @@ class RayPPOTrainer:
                         if self.config.reward_model.launch_reward_fn_async:
                             reward_tensor, reward_extra_infos_dict = ray.get(future_reward)
                         batch.batch["token_level_scores"] = reward_tensor
+                        # print(f"reward_tensor:{reward_tensor}")
 
                         if reward_extra_infos_dict:
                             batch.non_tensor_batch.update({k: np.array(v) for k, v in reward_extra_infos_dict.items()})
+                        # add reward_extra_infos_dict
 
                         # compute rewards. apply_kl_penalty if available
                         if self.config.algorithm.use_kl_in_reward:
@@ -1280,6 +1286,7 @@ class RayPPOTrainer:
                             norm_adv_by_std_in_grpo=norm_adv_by_std_in_grpo,
                             config=self.config.algorithm,
                         )
+                        # print(f"advantages:{batch.batch['advantages']}")
 
                     # update critic
                     if self.use_critic:

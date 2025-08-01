@@ -101,8 +101,10 @@ def compute_data_metrics(batch: DataProto, use_critic: bool = True) -> Dict[str,
             - prompt_length/mean, max, min, clip_ratio: Statistics about prompt lengths
             - num_turns/mean, max, min: Statistics about the number of multi-turn conversations
     """
-    sequence_score = batch.batch["token_level_scores"].sum(-1)
-    sequence_reward = batch.batch["token_level_rewards"].sum(-1)
+    sequence_score = batch.batch["token_level_scores"].sum(1)
+    sequence_reward = batch.batch["token_level_rewards"].sum(1)
+    reward_dim = sequence_reward.shape[-1]
+    print(sequence_score)
 
     advantages = batch.batch["advantages"]
     returns = batch.batch["returns"]
@@ -112,38 +114,59 @@ def compute_data_metrics(batch: DataProto, use_critic: bool = True) -> Dict[str,
     prompt_mask = batch.batch["attention_mask"][:, :-max_response_length].bool()
     response_mask = batch.batch["response_mask"].bool()
 
+
     max_prompt_length = prompt_mask.size(-1)
 
     response_info = _compute_response_info(batch)
     prompt_length = response_info["prompt_length"]
     response_length = response_info["response_length"]
 
-    valid_adv = torch.masked_select(advantages, response_mask)
-    valid_returns = torch.masked_select(returns, response_mask)
+    
+    mask_expanded = response_mask.unsqueeze(-1).expand_as(advantages)
+    valid_adv = advantages[response_mask]  # shape: [num_valid, reward_dim]
+    valid_returns = returns[response_mask]   # shape: [num_valid, reward_dim]
 
     if use_critic:
         values = batch.batch["values"]
-        valid_values = torch.masked_select(values, response_mask)
+        valid_values = values[response_mask]
         return_diff_var = torch.var(valid_returns - valid_values)
         return_var = torch.var(valid_returns)
 
-    metrics = {
+    metrics = {}
+    
+    for i in range(reward_dim):
+        # Rewards
+        metrics[f"critic/rewards/mean/d{i}"] = sequence_reward[:, i].mean().item()
+        metrics[f"critic/advantages/mean/d{i}"] = valid_adv[:, i].mean().item()
+        metrics[f"critic/returns/mean/d{i}"] = valid_returns[:, i].mean().item()
+    for i in range(reward_dim):
+        metrics[f"critic/rewards/max/d{i}"] = sequence_reward[:, i].max().item()
+        metrics[f"critic/advantages/max/d{i}"] = valid_adv[:, i].max().item()
+        metrics[f"critic/returns/max/d{i}"] = valid_returns[:, i].max().item()
+    for i in range(reward_dim):
+        metrics[f"critic/rewards/min/d{i}"] = sequence_reward[:, i].min().item()
+        metrics[f"critic/advantages/min/d{i}"] = valid_adv[:, i].min().item()
+        metrics[f"critic/returns/min/d{i}"] = valid_returns[:, i].min().item()
+
+
+
+    metrics.update({
         # score
-        "critic/score/mean": torch.mean(sequence_score).detach().item(),
-        "critic/score/max": torch.max(sequence_score).detach().item(),
-        "critic/score/min": torch.min(sequence_score).detach().item(),
-        # reward
-        "critic/rewards/mean": torch.mean(sequence_reward).detach().item(),
-        "critic/rewards/max": torch.max(sequence_reward).detach().item(),
-        "critic/rewards/min": torch.min(sequence_reward).detach().item(),
-        # adv
-        "critic/advantages/mean": torch.mean(valid_adv).detach().item(),
-        "critic/advantages/max": torch.max(valid_adv).detach().item(),
-        "critic/advantages/min": torch.min(valid_adv).detach().item(),
-        # returns
-        "critic/returns/mean": torch.mean(valid_returns).detach().item(),
-        "critic/returns/max": torch.max(valid_returns).detach().item(),
-        "critic/returns/min": torch.min(valid_returns).detach().item(),
+        # "critic/score/mean": torch.mean(sequence_score).detach().item(),
+        # "critic/score/max": torch.max(sequence_score).detach().item(),
+        # "critic/score/min": torch.min(sequence_score).detach().item(),
+        # # reward
+        # "critic/rewards/mean": torch.mean(sequence_reward).detach().item(),
+        # "critic/rewards/max": torch.max(sequence_reward).detach().item(),
+        # "critic/rewards/min": torch.min(sequence_reward).detach().item(),
+        # # adv
+        # "critic/advantages/mean": torch.mean(valid_adv).detach().item(),
+        # "critic/advantages/max": torch.max(valid_adv).detach().item(),
+        # "critic/advantages/min": torch.min(valid_adv).detach().item(),
+        # # # returns
+        # "critic/returns/mean": torch.mean(valid_returns).detach().item(),
+        # "critic/returns/max": torch.max(valid_returns).detach().item(),
+        # "critic/returns/min": torch.min(valid_returns).detach().item(),
         **(
             {
                 # values
@@ -168,7 +191,7 @@ def compute_data_metrics(batch: DataProto, use_critic: bool = True) -> Dict[str,
         "prompt_length/max": torch.max(prompt_length).detach().item(),
         "prompt_length/min": torch.min(prompt_length).detach().item(),
         "prompt_length/clip_ratio": torch.mean(torch.eq(prompt_length, max_prompt_length).float()).detach().item(),
-    }
+    })
 
     # multi-turn conversation
     if "__num_turns__" in batch.non_tensor_batch:
