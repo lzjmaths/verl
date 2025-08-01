@@ -1,9 +1,15 @@
-import wandb
+import requests
 
-wandb.init(project="my-awesome-project", name="run-1")
+url = "http://127.0.0.1:10000/v1/chat/completions"
+headers = {"Content-Type": "application/json"}
 
-for epoch in range(10):
-    loss = 1.0
-    wandb.log({"loss": loss, "epoch": epoch})
+data = {
+    "model": "Qwen3-14B",
+    "messages": [
+        {"role": "user", "content": "Hello, how are you?"}
+    ],
+    "max_tokens": 100
+}
 
-wandb.init(config={"lr": 0.001, "batch_size": 32})
+response = requests.post(url, headers=headers, json=data)
+print(response.json())
