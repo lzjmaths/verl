@@ -1416,11 +1416,19 @@ class RayPPOTrainer:
         # 计算总数
         total_num = TP + TN + FP + FN
         
+        if total_num == 0:
+            result = {
+                'total_num': 0,
+                'true_score': 0.0,
+                'general_score': 0.0  
+            }
         # 初始化结果字典
-        result = {
-            'total_num': total_num,
-            "true_score": extra_info.get("true_score",0) / total_num
-        }
+        else:
+            result = {
+                'total_num': total_num,
+                "true_score": extra_info.get("true_score",0) / total_num,
+                "general_score": extra_info.get("general_score",0) / total_num
+            }
         
         # 防止除零错误，计算各项指标
         if total_num == 0:

@@ -7,6 +7,7 @@ DATE=$(date +%m%d)
 TIME_TAG=$(date +%H%M%S)
 LOCAL_DIR=/mnt/workspace/linzejin/verl
 MODEL_DIR=/mnt/workspace/linzejin/models/Qwen
+LOG_DIR=/mnt/workspace/linzejin/verl/logs
 
 K=3
 MAX_PROMPT_LENGTH=1024
@@ -20,9 +21,9 @@ fi
 
 EPISODE=20
 DATA_TRAIN_BATCH_SIZE=32
-MINI_BATCH_SIZE=2
-MICRO_BATCH_SIZE=1
-GPU_NUM=4
+MINI_BATCH_SIZE=8
+MICRO_BATCH_SIZE=4
+GPU_NUM=2
 
 TASK="MATH500"
 
@@ -49,8 +50,9 @@ MODEL="${TASK}-${BACKBONE}"
 
 PROJECT_NAME="grpo_RLMR-${TASK}"
 EXPERIMENT_NAME="rlmr@${K}k"
+EX_NAME=""
 LOG_NAME="${EXPERIMENT_NAME}-${MODEL}-${DATE}-${TIME_TAG}"
-OUTPUT_DIR="checkpoints/${PROJECT_NAME}/${MODEL}/${DATE}/${EXPERIMENT_NAME}-${ADVANTAGE}-${TIME_TAG}"
+OUTPUT_DIR="checkpoints/${PROJECT_NAME}/${MODEL}/${DATE}/${EXPERIMENT_NAME}-${ADVANTAGE}-${TIME_TAG}${EX_NAME}"
 
 python -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
@@ -79,7 +81,7 @@ python -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.tensor_model_parallel_size=2 \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.temperature=1.0 \
-    actor_rollout_ref.rollout.gpu_memory_utilization=0.4 \
+    actor_rollout_ref.rollout.gpu_memory_utilization=0.80  \
     actor_rollout_ref.rollout.val_kwargs.n=$N \
     actor_rollout_ref.rollout.val_kwargs.top_p=0.95 \
     actor_rollout_ref.rollout.val_kwargs.temperature=1.0 \
@@ -93,13 +95,16 @@ python -m verl.trainer.main_ppo \
     trainer.experiment_name=$LOG_NAME \
     trainer.n_gpus_per_node=$GPU_NUM \
     trainer.nnodes=1 \
-    trainer.rollout_data_dir=/mnt/workspace/linzejin/tmp \
+    trainer.rollout_data_dir="${LOG_DIR}/${LOG_NAME}/rollout" \
+    trainer.validation_data_dir="${LOG_DIR}/${LOG_NAME}/validation" \
     trainer.save_freq=100 \
     trainer.default_local_dir=$OUTPUT_DIR \
     trainer.test_freq=5 \
     trainer.total_epochs=$EPISODE \
-    custom_reward_function.path="/mnt/workspace/linzejin/verl/RLVR/math_reward_multi.py" \
-    custom_test_function.path="/mnt/workspace/linzejin/verl/RLVR/math_reward.py"  $@ 
+    custom_reward_function.path="/mnt/workspace/linzejin/verl/RLVR/verify_reward_multi.py" \
+    custom_test_function.path="/mnt/workspace/linzejin/verl/ProofRL/general_math_reward.py"  $@ 
 
 
 echo "Output directory: $OUTPUT_DIR"
+echo " /mnt/workspace/linzejin/verl/checkpoints/grpo_RLMR-MATH500/MATH500-Qwen2.5-Math-1.5B/0801/rlmr@3k-grpo-180834/global_step_300/actor"
+echo " /mnt/workspace/linzejin/verl/checkpoints/grpo_RLMR-MATH500/MATH500-Qwen2.5-Math-1.5B/0802/rlmr@3k-grpo-180834/global_step_300/actor"

@@ -77,7 +77,7 @@ class NaiveRewardManager:
 
         already_print_data_sources = {}
 
-        with concurrent.futures.ProcessPoolExecutor(max_workers=50) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=60) as executor:
             # 提交所有任务，并创建一个future到索引的映射
             # 我们传递索引 i 和 data_item
             futures = {
@@ -100,14 +100,18 @@ class NaiveRewardManager:
                     # --- 在主进程中安全地聚合结果 ---
                     if isinstance(score, dict):
                         reward = score.pop("score")
-
+                        try:
+                            process_keys = score.pop("process_keys")
+                        except KeyError:
+                            process_keys = []
                         # 存储所有额外信息
                         for key, value in score.items():
                             # 注意：由于结果是无序返回的，直接append会打乱顺序
                             # 如果需要保持顺序，需要更复杂的处理，但对于统计通常没问题
-                            if key in ["TP","TN","FP","FN","true_score"]:
+                            if key in process_keys:
                                 reward_extra_info[key] += value
                             else:
+                                reward_extra_info[key] = reward_extra_info.get(key, [])
                                 reward_extra_info[key].append(value)
                     else:
                         reward = score
