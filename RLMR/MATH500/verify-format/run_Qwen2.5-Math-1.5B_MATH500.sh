@@ -110,12 +110,9 @@ python -m verl.trainer.main_ppo \
     trainer.total_epochs=$EPISODE \
     custom_reward_function.workers=80 \
     custom_reward_function.reward_dim=2 \
-    custom_reward_function.log_dir="${LOG_DIR}/${LOG_NAME}/reward" \
+    custom_reward_function.config.log_dir="${LOG_DIR}/${LOG_NAME}/reward" \
     custom_reward_function.path=${REWARD_FUN} \
     custom_test_function.path=${TEST_FUN}  $@ 
 
 
 echo "Output directory: $OUTPUT_DIR"
-echo " /mnt/workspace/linzejin/verl/checkpoints/grpo_RLMR-MATH500/MATH500-Qwen2.5-Math-1.5B/0801/rlmr@3k-grpo-180834/global_step_300/actor"
-echo " /mnt/workspace/linzejin/verl/checkpoints/grpo_RLMR-MATH500/MATH500-Qwen2.5-Math-1.5B/0802/rlmr@3k-grpo-180834/global_step_300/actor"
-echo " /mnt/workspace/linzejin/verl/checkpoints/grpo_RLMR-MATH500/MATH500-Qwen2.5-Math-1.5B/0802/rlmr@3k-grpo-234345/global_step_300/actor/model_world_size_2_rank_0.p"
