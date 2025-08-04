@@ -9,6 +9,7 @@ PRL是一个基于verl修改的针对证明题做训练的仓库。基本的修�
         - config.model_name: name for the model, default is 'Qwen3-14B'
         - config.api_url: url link for api, default is null. We do not use it in our reward_function.
         - config.reviews: reviews number for review model. 
+        - config.log_dir: location where you save the reward log, default is null.
     - custom_test_function:
         - path:null
         - name: for load the reward function in the file, default is 'compute_score'

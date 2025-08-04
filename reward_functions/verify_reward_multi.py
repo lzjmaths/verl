@@ -469,16 +469,17 @@ def compute_score(data_source:str, solution_str:str, ground_truth, extra_info=No
         
         try:
             # 确保目录存在
-            fp_dir = os.path.join(WORK_DIR, "verl/ProofRL/FP")
-            os.makedirs(fp_dir, exist_ok=True)
-            
-            # 文件路径
-            fp_file = os.path.join(fp_dir, "false_positive_instances.jsonl")
-            # 保存到JSON文件
-            with open(fp_file, "a", encoding="utf-8") as f:
-                json.dump(fp_data, f, ensure_ascii=False, indent=2)
-                f.write("\n")  # 添加换行符分隔不同实例
-            # print(f"False Positive instance saved to JSON!")
+            fp_dir = extra_info.get("log_dir", None)
+            if fp_dir:
+                os.makedirs(fp_dir, exist_ok=True)
+                
+                # 文件路径
+                fp_file = os.path.join(fp_dir, "false_positive_instances.jsonl")
+                # 保存到JSON文件
+                with open(fp_file, "a", encoding="utf-8") as f:
+                    json.dump(fp_data, f, ensure_ascii=False, indent=2)
+                    f.write("\n")  # 添加换行符分隔不同实例
+                # print(f"False Positive instance saved to JSON!")
         except Exception as e:
             print(f"Failed to save FP instance: {e}")
             print(f"There exists False Positive instance!")
@@ -503,16 +504,17 @@ def compute_score(data_source:str, solution_str:str, ground_truth, extra_info=No
         
         try:
             # 确保目录存在
-            fp_dir = os.path.join(WORK_DIR, "verl/ProofRL/FP")
-            os.makedirs(fp_dir, exist_ok=True)
-            
-            # 文件路径
-            fp_file = os.path.join(fp_dir, "false_negative_instances.jsonl")
-            # 保存到JSON文件
-            with open(fp_file, "a", encoding="utf-8") as f:
-                json.dump(fp_data, f, ensure_ascii=False, indent=2)
-                f.write("\n")  # 添加换行符分隔不同实例
-            # print(f"False Positive instance saved to JSON!")
+            fp_dir = extra_info.get("log_dir", None)
+            if fp_dir:
+                os.makedirs(fp_dir, exist_ok=True)
+                
+                # 文件路径
+                fp_file = os.path.join(fp_dir, "false_negative_instances.jsonl")
+                # 保存到JSON文件
+                with open(fp_file, "a", encoding="utf-8") as f:
+                    json.dump(fp_data, f, ensure_ascii=False, indent=2)
+                    f.write("\n")  # 添加换行符分隔不同实例
+                # print(f"False Positive instance saved to JSON!")
         except Exception as e:
             print(f"Failed to save FP instance: {e}")
             print(f"There exists False Negative instance!")

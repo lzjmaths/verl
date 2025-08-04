@@ -53,12 +53,12 @@ BACKBONE_PATH="${MODEL_DIR}/${BACKBONE}"
 MODEL="${TASK}-${BACKBONE}"
 
 PROJECT_NAME="grpo_RLMR-${TASK}"
-EXPERIMENT_NAME="rlmr@${K}k"
+EXPERIMENT_NAME="rlmr-f-l@${K}k"
 EX_NAME=""
 LOG_NAME="${EXPERIMENT_NAME}-${MODEL}-${DATE}-${TIME_TAG}"
 OUTPUT_DIR="checkpoints/${PROJECT_NAME}/${MODEL}/${DATE}/${EXPERIMENT_NAME}-${ADVANTAGE}-${TIME_TAG}${EX_NAME}"
 
-REWARD_FUN="${WORK_DIR}/reward_functions/verify_reward_format.py"
+REWARD_FUN="${WORK_DIR}/reward_functions/verify_reward_format_linear.py"
 TEST_FUN="${WORK_DIR}/reward_functions/math_reward.py"
 
 python -m verl.trainer.main_ppo \

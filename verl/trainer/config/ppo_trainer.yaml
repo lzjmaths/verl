@@ -891,6 +891,7 @@ custom_reward_function:
     model_name: Qwen3-14B
     api_url: null
     reviews: 1
+    log_dir: null
 
 # custom reward function definition
 custom_test_function:
