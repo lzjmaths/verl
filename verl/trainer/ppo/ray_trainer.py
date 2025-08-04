@@ -1193,7 +1193,7 @@ class RayPPOTrainer:
                         if self.config.reward_model.launch_reward_fn_async:
                             future_reward = compute_reward_async.remote(batch, self.config, self.tokenizer)
                         else:
-                            reward_tensor, reward_extra_infos_dict = compute_reward(batch, self.reward_fn)
+                            reward_tensor, reward_extra_infos_dict = compute_reward(batch, self.reward_fn, self.config.custom_reward_function)
                             if reward_extra_infos_dict:
                                 reward_extra_info_metric=self._process_reward_extra_info_dict(reward_extra_infos_dict)
                                 metrics.update(reward_extra_info_metric)
@@ -1464,5 +1464,6 @@ class RayPPOTrainer:
         result["TP"]=TP
         result["FP"]=FP
         result["FN"]=FN
+        result["box_len"] = extra_info.get("box_num", 0) / total_num
         return result
 

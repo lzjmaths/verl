@@ -179,8 +179,10 @@ def load_reward_manager(config, tokenizer, num_examine, module, **reward_kwargs)
             )
         else:
             final_compute_score = default_compute_score
-
-    dim = config.reward_model.get("reward_dim", 2 if module == "train" else 1)  # Default reward dimension is 2
+    if module == "train":
+        dim = config.custom_reward_function.get("reward_dim", 2) # Default reward dimension is 2
+    else:
+        dim = config.custom_test_function.get("reward_dim", 1)
     # Instantiate and return the reward manager with the specified parameters
     return reward_manager_cls(
         tokenizer=tokenizer,
@@ -192,7 +194,7 @@ def load_reward_manager(config, tokenizer, num_examine, module, **reward_kwargs)
     )
 
 
-def compute_reward(data: DataProto, reward_fn):
+def compute_reward(data: DataProto, reward_fn, config):
     """
     Compute reward for a batch of data.
     Args:
@@ -202,12 +204,12 @@ def compute_reward(data: DataProto, reward_fn):
         Tuple of reward tensor and extra info dictionary.
     """
     try:
-        reward_result = reward_fn(data, return_dict=True)
+        reward_result = reward_fn(data,config, return_dict=True)
         reward_tensor = reward_result["reward_tensor"]
         reward_extra_infos_dict = reward_result.get("reward_extra_info", {})
     except Exception as e:
         print(f"Error in reward_fn: {e}")
-        reward_tensor = reward_fn(data)
+        reward_tensor = reward_fn(data,config)
         reward_extra_infos_dict = {}
 
     return reward_tensor, reward_extra_infos_dict

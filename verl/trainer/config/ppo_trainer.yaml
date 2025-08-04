@@ -883,6 +883,15 @@ custom_reward_function:
   # The name of the reward function within the specified file. Default is 'compute_score'.
   name: compute_score
 
+  workers: 1
+
+  reward_dim: 2
+
+  config:
+    model_name: Qwen3-14B
+    api_url: null
+    reviews: 1
+
 # custom reward function definition
 custom_test_function:
 
@@ -893,6 +902,7 @@ custom_test_function:
   # The name of the reward function within the specified file. Default is 'compute_score'.
   name: compute_score
 
+  reward_dim: 1
 # config for the algorithm
 algorithm:
 

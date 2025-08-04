@@ -129,3 +129,4 @@ checkpoints/
 checkpoint/
 ProofRL/FP
 ProofRL/FP/false_positive_instances.json
+ProofRL/example

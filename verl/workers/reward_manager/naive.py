@@ -39,7 +39,7 @@ from verl.trainer.ppo.reward import get_custom_reward_fn
 class NaiveRewardManager:
     """The reward manager."""
 
-    def __init__(self, tokenizer, num_examine, compute_score=None,reward_dim=2, reward_fn_key="data_source") -> None:
+    def __init__(self, tokenizer, num_examine, compute_score=None,reward_dim = 2, reward_fn_key="data_source") -> None:
         """
         Initialize the NaiveRewardManager instance.
 
@@ -56,7 +56,7 @@ class NaiveRewardManager:
         self.compute_score = compute_score or default_compute_score
         self.reward_fn_key = reward_fn_key  # Store the key for accessing the data source
 
-    def __call__(self, data: DataProto, return_dict=False):
+    def __call__(self, data: DataProto,config: dict={}, return_dict=False):
         """We will expand this function gradually based on the available datasets"""
 
         # If there is rm score, we directly return rm score. Otherwise, we compute via rm_score_fn
@@ -77,11 +77,11 @@ class NaiveRewardManager:
 
         already_print_data_sources = {}
 
-        with concurrent.futures.ProcessPoolExecutor(max_workers=60) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=config.get("workers", 80)) as executor:
             # 提交所有任务，并创建一个future到索引的映射
             # 我们传递索引 i 和 data_item
             futures = {
-                executor.submit(self._process_single_item, i, data[i]): i
+                executor.submit(self._process_single_item, i, data[i], config): i
                 for i in range(len(data))
             }
 
@@ -150,7 +150,7 @@ class NaiveRewardManager:
         else:
             return reward_tensor
 
-    def _process_single_item(self, i, data_item):
+    def _process_single_item(self, i, data_item, config):
         """
         处理单个数据项的函数，这是将在子进程中运行的核心逻辑。
         注意：这个函数不应修改任何共享状态，而是返回所有必要的信息。
@@ -174,6 +174,7 @@ class NaiveRewardManager:
             extra_info = data_item.non_tensor_batch.get("extra_info", {})
             num_turns = data_item.non_tensor_batch.get("__num_turns__", None)
             extra_info["num_turns"] = num_turns
+            extra_info.update(config.get("config", {}))
 
             score = self.compute_score(
                 data_source=data_source,
