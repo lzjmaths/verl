@@ -6,7 +6,7 @@ echo "start training"
 DATE=$(date +%m%d)
 TIME_TAG=$(date +%H%M%S)
 
-WORK_DIR='./'
+WORK_DIR='.'
 
 LOCAL_DIR="${WORK_DIR}"
 MODEL_DIR=/mnt/workspace/linzejin/models/Qwen

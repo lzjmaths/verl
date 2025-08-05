@@ -432,7 +432,7 @@ def compute_score(data_source:str, solution_str:str, ground_truth, extra_info=No
     reward["general_score"], box_len, format_score = general_verify(data_source, solution_str, ground_truth)
     score = rewards[0]
     reward["score"]=(score, true_score)
-    reward["score"]=(score*0.5+true_score*0.5,0)
+    reward["score"]=(score*0.9+format_score*0.1,0)
     
     reward["box_num"] = box_len
     reward["true_score"]=true_score
