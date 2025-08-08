@@ -72,7 +72,8 @@ class NaiveRewardManager:
         # reward_dim = 2 # TODO To be determined later
         if self.reward_dim >= 2:
             reward_tensor = torch.zeros(batch_size, seq_len, self.reward_dim, dtype=torch.float32)
-        reward_extra_info = defaultdict(int)
+        reward_extra_info = defaultdict(list)
+        reward_extra_info["_process_"] = defaultdict(int)
         
 
         already_print_data_sources = {}
@@ -101,18 +102,17 @@ class NaiveRewardManager:
                     if isinstance(score, dict):
                         reward = score.pop("score")
                         try:
-                            process_keys = score.pop("process_keys")
+                            process_keys = score.get("process_keys", [])
                         except KeyError:
                             process_keys = []
+                        reward_extra_info["_process_"]["process_keys"]=process_keys
                         # 存储所有额外信息
                         for key, value in score.items():
                             # 注意：由于结果是无序返回的，直接append会打乱顺序
                             # 如果需要保持顺序，需要更复杂的处理，但对于统计通常没问题
                             if key in process_keys:
-                                reward_extra_info[key] += value
-                            else:
-                                reward_extra_info[key] = reward_extra_info.get(key, [])
-                                reward_extra_info[key].append(value)
+                                reward_extra_info["_process_"][key] += value
+                            reward_extra_info[key].append(value)
                     else:
                         reward = score
 

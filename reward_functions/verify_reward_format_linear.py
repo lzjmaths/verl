@@ -1,4 +1,4 @@
-# This reward function is (critic score*0.8+format score*0.2,0)
+# This reward function is (critic score*0.9+format score*0.1,0)
 
 import openai
 import json

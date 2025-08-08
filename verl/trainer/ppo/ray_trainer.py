@@ -748,9 +748,10 @@ class RayPPOTrainer:
             reward_extra_infos_dict["reward"].extend(scores)
             print(f"len reward_extra_infos_dict['reward']: {len(reward_extra_infos_dict['reward'])}")
             if "reward_extra_info" in result:
-                for key, lst in result["reward_extra_info"].items():
-                    reward_extra_infos_dict[key].extend(lst)
-                    print(f"len reward_extra_infos_dict['{key}']: {len(reward_extra_infos_dict[key])}")
+                print("reward_extra_info in test_function has not been supproted yet!")
+                # for key, lst in result["reward_extra_info"].items():
+                #     reward_extra_infos_dict[key].extend(lst)
+                #     print(f"len reward_extra_infos_dict['{key}']: {len(reward_extra_infos_dict[key])}")
 
             # collect num_turns of each prompt
             if "__num_turns__" in test_batch.non_tensor_batch:
@@ -1195,9 +1196,13 @@ class RayPPOTrainer:
                         else:
                             reward_tensor, reward_extra_infos_dict = compute_reward(batch, self.reward_fn, self.config.custom_reward_function)
                             if reward_extra_infos_dict:
-                                reward_extra_info_metric=self._process_reward_extra_info_dict(reward_extra_infos_dict)
-                                metrics.update(reward_extra_info_metric)
-                                reward_extra_infos_dict = {}
+                                try:
+                                    reward_extra_info_metric=self._process_reward_extra_info_dict(reward_extra_infos_dict.pop("_process_"))
+                                
+                                    metrics.update(reward_extra_info_metric)
+                                except KeyError:
+                                    reward_extra_info_metric = {}
+                                    print("There is something wrong with reward_extra_info_metric")
 
                     # recompute old_log_probs
                     with marked_timer("old_log_prob", timing_raw, color="blue"):
@@ -1311,12 +1316,12 @@ class RayPPOTrainer:
                             print(batch.batch.keys())
                             inputs = self.tokenizer.batch_decode(batch.batch["prompts"], skip_special_tokens=True)
                             outputs = self.tokenizer.batch_decode(batch.batch["responses"], skip_special_tokens=True)
-                            scores = batch.batch["token_level_scores"].sum(-1).cpu().tolist()
+                            scores = batch.batch["token_level_scores"].sum(1).cpu().tolist()
                             self._dump_generations(
                                 inputs=inputs,
                                 outputs=outputs,
                                 scores=scores,
-                                reward_extra_infos_dict=reward_extra_infos_dict,
+                                reward_extra_infos_dict=reward_extra_infos_dict, # save reward_extra_infos_dict
                                 dump_path=rollout_data_dir,
                             )
 
@@ -1407,7 +1412,10 @@ class RayPPOTrainer:
                 - total_num: 总样本数 TP + TN + FP + FN
                 - true_score: 真实分数比例
         """
+        
+                
         # 获取混淆矩阵的四个值
+
         TP = extra_info.get('TP', 0)
         TN = extra_info.get('TN', 0)
         FP = extra_info.get('FP', 0)
@@ -1465,5 +1473,14 @@ class RayPPOTrainer:
         result["FP"]=FP
         result["FN"]=FN
         result["box_len"] = extra_info.get("box_num", 0) / total_num
+        try:
+            process_keys = extra_info.pop("process_keys")
+        except KeyError:
+            process_keys = []
+        for key in process_keys:
+            if key not in ["TP","TN","FP","FN","true_score", "general_score", "box_num", "process_keys"]:
+                if isinstance(extra_info.get(key,0), int):
+                    result[key]=extra_info.get(key, 0)
+            
         return result
 

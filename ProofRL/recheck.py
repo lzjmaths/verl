@@ -7,7 +7,7 @@ import time
 import os
 
 # --- 1. 在此处定义您的JSON文件名 ---
-JSON_FILE_PATH = "/mnt/workspace/linzejin/verl/logs/rlmr@3k-MATH500-Qwen2.5-Math-1.5B-0802-234345/rollout/1.jsonl"
+JSON_FILE_PATH = "/mnt/workspace/linzejin/verl/verl/logs/rlmr-f-l@3k-MATH500-Qwen2.5-Math-1.5B-0805-112316/reward/false_positive_instances.json"
 FINAL_CHART_IMAGE_PATH = "solution_verification_results.png"
 
 # --- 2. 模拟的 compute_score 函数 ---
@@ -23,17 +23,59 @@ except ImportError:
     print("To use Math-Verify, please install it first by running `pip install math-verify`.")
 
 def read_jsonl_simple(file_path):
-    """简单读取：返回所有数据的列表"""
-    data = []
-    with open(file_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            line = line.strip()
-            if line:  # 跳过空行
-                try:
-                    data.append(json.loads(line))
-                except json.JSONDecodeError as e:
-                    print(f"跳过无效行: {line[:50]}... 错误: {e}")
-    return data
+    """
+    解析一个非标准的、缺少逗号且对象连续的文件。
+
+    该函数处理如下格式的文件:
+    {
+        "key1": "value1"
+        "key2": "value2"
+    }
+    {
+        "key3": "value3"
+    }
+    """
+    all_data = []
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            # 1. 将整个文件读入一个字符串
+            content = f.read()
+    except FileNotFoundError:
+        print(f"错误: 文件未找到 at path: {file_path}")
+        return []
+
+    # 2. 将内容分割成独立的、类似对象的文本块。
+    # 我们用一个特殊的分隔符替换对象之间的边界，然后分割。
+    # '}\n{' 是对象之间的典型模式。
+    object_strings = content.replace('}\n{', '}\n###SEPARATOR###\n{').split('###SEPARATOR###')
+
+    for i, obj_str in enumerate(object_strings):
+        # 跳过可能因分割产生的空字符串
+        if not obj_str.strip():
+            continue
+
+        # 3. 在块内部，为缺失的逗号打补丁。
+        # 我们查找一个双引号 + 换行符 + 双引号的模式 ( " \n " )
+        # 并将其替换为双引号 + 逗号 + 换行符 + 双引号 ( " , \n " )
+        # 这能安全地在键值对之间添加逗号。
+        fixed_obj_str = obj_str.replace('"\n    "', '",\n    "') # 针对有缩进的情况
+        fixed_obj_str = fixed_obj_str.replace('"\n"', '",\n"')       # 针对无缩进的情况
+
+
+        # 4. 尝试用标准库解析修复后的字符串
+        try:
+            # 移除可能存在的前后空白
+            clean_str = fixed_obj_str.strip()
+            if clean_str:
+                data = json.loads(clean_str)
+                all_data.append(data)
+        except json.JSONDecodeError as e:
+            # 如果即使修复后仍然失败，就打印警告并跳过这个块
+            print(f"警告：跳过第 {i+1} 个无法解析的对象块。错误: {e}")
+            print(f"   > 问题块内容:\n{obj_str}\n")
+            
+    return all_data
 def compute_score(data_source, solution_str: str, ground_truth: str,extra_info=None, timeout_score: float = 0) -> bool:
     verify_func = math_metric(
         gold_extraction_target=(LatexExtractionConfig(), StringExtractionConfig()),

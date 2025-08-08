@@ -7,7 +7,7 @@ PRL是一个基于verl修改的针对证明题做训练的仓库。基本的修�
         - workers: workers for computing reward, default is 1
         - reward_dim: You need to determine it in the reward function, default is 2.
         - config.model_name: name for the model, default is 'Qwen3-14B'
-        - config.api_url: url link for api, default is null. We do not use it in our reward_function.
+        - config.api_url: url link for api, default is null. We do not use it in our reward_function. 你需要自己在奖励函数里设置api_url
         - config.reviews: reviews number for review model. 
         - config.log_dir: location where you save the reward log, default is null.
     - custom_test_function:
