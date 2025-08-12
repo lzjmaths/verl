@@ -72,6 +72,8 @@ class NaiveRewardManager:
         # reward_dim = 2 # TODO To be determined later
         if self.reward_dim >= 2:
             reward_tensor = torch.zeros(batch_size, seq_len, self.reward_dim, dtype=torch.float32)
+        
+        extra_info = {}
         reward_extra_info = defaultdict(list)
         reward_extra_info["_process_"] = defaultdict(int)
         
@@ -102,7 +104,7 @@ class NaiveRewardManager:
                     if isinstance(score, dict):
                         reward = score.pop("score")
                         try:
-                            process_keys = score.get("process_keys", [])
+                            process_keys = score.pop("process_keys", [])
                         except KeyError:
                             process_keys = []
                         reward_extra_info["_process_"]["process_keys"]=process_keys
@@ -112,7 +114,8 @@ class NaiveRewardManager:
                             # 如果需要保持顺序，需要更复杂的处理，但对于统计通常没问题
                             if key in process_keys:
                                 reward_extra_info["_process_"][key] += value
-                            reward_extra_info[key].append(value)
+                            # reward_extra_info[key].append(value)
+                        extra_info[i] = score
                     else:
                         reward = score
 
@@ -129,7 +132,6 @@ class NaiveRewardManager:
 
                     if already_print_data_sources[data_source] < self.num_examine:
                         already_print_data_sources[data_source] += 1
-                        print("end of test for 1 time")
                         if isinstance(score, dict):
                             for key, value in score.items():
                                 print(f"[{key}]", value)
@@ -141,7 +143,20 @@ class NaiveRewardManager:
                     # 捕获任务执行或结果检索中可能发生的任何其他错误
                     index = futures[future]
                     print(f"处理数据项 {index} 失败，出现严重错误: {e}")
+        # 更新 reward_extra_info
+        if extra_info:
+            for idx in range(len(data)):
+                if idx in extra_info:
+                    for key, value in extra_info[idx].items():
+                        reward_extra_info[key].append(value)
+                # 在_dump_generation的设计中并没有考虑那些不存在的input
 
+
+                # else:
+                #     # 为失败的任务添加占位符，保持长度一致
+                #     sample_keys = next(iter(extra_info.values())).keys()
+                #     for key in sample_keys:
+                #         reward_extra_info[key].append(None)  # 或其他默认值
         if return_dict:
             return {
                 "reward_tensor": reward_tensor,

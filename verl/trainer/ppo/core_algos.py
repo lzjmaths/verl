@@ -274,6 +274,9 @@ def compute_grpo_outcome_advantage(
 
     # return scores, scores
     scores = token_level_rewards.sum(dim=1)
+    # print(f"type of scores: {scores.shape}")
+    # print(f"token_level_rewards:{token_level_rewards.shape}")
+    # print(scores)
     id2score = defaultdict(list)
     id2mean = {}
     id2std = {}
@@ -297,6 +300,7 @@ def compute_grpo_outcome_advantage(
                 # print(scores[i])
             else:
                 scores[i] = scores[i] - id2mean[index[i]]
+        
         scores = scores.unsqueeze(1) * response_mask.unsqueeze(-1)
     return scores, scores
 

@@ -748,10 +748,11 @@ class RayPPOTrainer:
             reward_extra_infos_dict["reward"].extend(scores)
             print(f"len reward_extra_infos_dict['reward']: {len(reward_extra_infos_dict['reward'])}")
             if "reward_extra_info" in result:
-                print("reward_extra_info in test_function has not been supproted yet!")
-                # for key, lst in result["reward_extra_info"].items():
-                #     reward_extra_infos_dict[key].extend(lst)
-                #     print(f"len reward_extra_infos_dict['{key}']: {len(reward_extra_infos_dict[key])}")
+                # print("reward_extra_info in test_function has not been supported yet!")
+                for key, lst in result["reward_extra_info"].items():
+                    if key is not "_process_":
+                        reward_extra_infos_dict[key].extend(lst)
+                        print(f"len reward_extra_infos_dict['{key}']: {len(reward_extra_infos_dict[key])}")
 
             # collect num_turns of each prompt
             if "__num_turns__" in test_batch.non_tensor_batch:
@@ -1428,14 +1429,16 @@ class RayPPOTrainer:
             result = {
                 'total_num': 0,
                 'true_score': 0.0,
-                'general_score': 0.0  
+                'general_score': 0.0,
+                "box_len": 0.0
             }
         # 初始化结果字典
         else:
             result = {
                 'total_num': total_num,
                 "true_score": extra_info.get("true_score",0) / total_num,
-                "general_score": extra_info.get("general_score",0) / total_num
+                "general_score": extra_info.get("general_score",0) / total_num,
+                "box_len": extra_info.get("box_num", 0) / total_num
             }
         
         # 防止除零错误，计算各项指标
@@ -1472,7 +1475,6 @@ class RayPPOTrainer:
         result["TP"]=TP
         result["FP"]=FP
         result["FN"]=FN
-        result["box_len"] = extra_info.get("box_num", 0) / total_num
         try:
             process_keys = extra_info.pop("process_keys")
         except KeyError:
